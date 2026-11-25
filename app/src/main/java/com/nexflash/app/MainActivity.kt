@@ -18,7 +18,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NexFlashTheme(accent = vm.state.collectAsState().value.accent) {
+            val ui by vm.state.collectAsStateWithLifecycle()
+            NexFlashTheme(accent = ui.accent) {
                 Surface { NexFlashRoot(vm) }
             }
         }
