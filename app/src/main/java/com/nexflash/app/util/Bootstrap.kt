@@ -66,17 +66,20 @@ object Bootstrap {
 
     fun env(ctx: Context): Map<String, String> {
         val u = usr(ctx).absolutePath
-        val path = "$u/bin:" + (System.getenv("PATH") ?: "")
+        val native = ctx.applicationInfo.nativeLibraryDir
+        val path = "$u/bin:$native:" + (System.getenv("PATH") ?: "")
         return mapOf(
             "HOME" to home(ctx).absolutePath,
             "PREFIX" to u,
             "TMPDIR" to tmp(ctx).absolutePath,
             "PATH" to path,
-            "LD_LIBRARY_PATH" to "$u/lib",
+            "LD_LIBRARY_PATH" to "$u/lib:$native",
             "TERM" to "xterm-256color",
             "LANG" to "en_US.UTF-8",
             "ANDROID_ROOT" to "/system",
-            "ANDROID_DATA" to "/data"
+            "ANDROID_DATA" to "/data",
+            "ADB_LIBUSB" to "1",
+            "ADB_MDNS_OPENSCREEN" to "0"
         )
     }
 

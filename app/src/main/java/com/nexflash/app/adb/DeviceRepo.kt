@@ -8,8 +8,21 @@ data class Device(val serial: String, val state: String, val detail: String, val
 }
 
 object DeviceRepo {
-    suspend fun listAdb(ctx: Context): List<Device> = parse(Shell.run(ctx, Shell.adb(ctx, listOf("devices","-l"), null)).out, Device.Kind.ADB)
-    suspend fun listFastboot(ctx: Context): List<Device> = parse(Shell.run(ctx, Shell.fastboot(ctx, listOf("devices","-l"), null)).out, Device.Kind.FASTBOOT)
+    data class Scan(val devices: List<Device>, val raw: String, val err: String, val code: Int)
+    suspend fun listAdb(ctx: Context): Scan {
+        val r = Shell.run(ctx, Shell.adb(ctx, listOf("devices","-l"), null))
+        return Scan(parse(r.out, Device.Kind.ADB), r.out, r.err, r.code)
+    }
+    suspend fun listFastboot(ctx: Context): Scan {
+        val r = Shell.run(ctx, Shell.fastboot(ctx, listOf("devices","-l"), null))
+        return Scan(parse(r.out, Device.Kind.FASTBOOT), r.out, r.err, r.code)
+    }
+    fun usbHostDevices(ctx: Context): List<String> {
+        val usb = ctx.getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
+        return usb.deviceList.values.map { d ->
+            "${d.deviceName} vid=${d.vendorId} pid=${d.productId} prod=${d.productName ?: ""} serial=${d.serialNumber ?: ""} cls=${d.deviceClass}/${d.deviceSubclass} ifaces=${d.interfaceCount}"
+        }
+    }
 
     private fun parse(out: String, kind: Device.Kind): List<Device> = out.lines().mapNotNull { line ->
         val t = line.trim()

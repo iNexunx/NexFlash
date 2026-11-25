@@ -45,8 +45,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refresh() = viewModelScope.launch {
         _state.update { it.copy(busy = true) }
-        val adb = runCatching { DeviceRepo.listAdb(ctx) }.getOrDefault(emptyList())
-        val fb = runCatching { DeviceRepo.listFastboot(ctx) }.getOrDefault(emptyList())
+        val adbScan = runCatching { DeviceRepo.listAdb(ctx) }.getOrDefault(DeviceRepo.Scan(emptyList(), "", "scan failed", 1))
+        val fbScan = runCatching { DeviceRepo.listFastboot(ctx) }.getOrDefault(DeviceRepo.Scan(emptyList(), "", "scan failed", 1))
+        val adb = adbScan.devices
+        val fb = fbScan.devices
         _state.update { s ->
             s.copy(adbDevices = adb, fbDevices = fb,
                 selectedAdb = s.selectedAdb?.takeIf { id -> adb.any { it.serial == id } } ?: adb.firstOrNull()?.serial,
@@ -54,6 +56,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 busy = false)
         }
         log("[refresh] adb=${adb.size} fastboot=${fb.size}")
+        val usb = runCatching { DeviceRepo.usbHostDevices(ctx) }.getOrDefault(emptyList())
+        log("[usb-host] ${usb.size} device(s)")
+        usb.forEach { log("  $it") }
+        if (adbScan.err.isNotBlank()) log("[adb err] ${adbScan.err}")
+        if (fbScan.err.isNotBlank()) log("[fastboot err] ${fbScan.err}")
     }
 
     fun selectAdb(s: String) = _state.update { it.copy(selectedAdb = s) }

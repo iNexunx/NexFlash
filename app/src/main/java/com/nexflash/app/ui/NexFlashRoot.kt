@@ -31,28 +31,26 @@ fun NexFlashRoot(vm: MainViewModel = viewModel()) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("ADB", "Fastboot", "Consola")
 
-    NexFlashTheme(accent = Accent.entries[s.accent.coerceIn(0, Accent.entries.lastIndex)]) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("NexFlash") },
-                    actions = {
-                        AccentMenu(selected = s.accent, onSelect = vm::setAccent)
-                        IconButton(onClick = vm::refresh, enabled = !s.busy) { Icon(Icons.Default.Refresh, "Refrescar") }
-                    }
-                )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("NexFlash") },
+                actions = {
+                    AccentMenu(selected = s.accent, onSelect = vm::setAccent)
+                    IconButton(onClick = vm::refresh, enabled = !s.busy) { Icon(Icons.Default.Refresh, "Refrescar") }
+                }
+            )
+        }
+    ) { pad ->
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            if (s.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            PrimaryTabRow(selectedTabIndex = tab) {
+                tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
-        ) { pad ->
-            Column(Modifier.padding(pad).fillMaxSize()) {
-                if (s.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                PrimaryTabRow(selectedTabIndex = tab) {
-                    tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
-                }
-                when (tab) {
-                    0 -> AdbTab(s, vm)
-                    1 -> FastbootTab(s, vm)
-                    2 -> ConsoleTab(s, vm)
-                }
+            when (tab) {
+                0 -> AdbTab(s, vm)
+                1 -> FastbootTab(s, vm)
+                2 -> ConsoleTab(s, vm)
             }
         }
     }
