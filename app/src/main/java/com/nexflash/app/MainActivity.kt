@@ -7,7 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
 import androidx.compose.material3.Surface
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nexflash.app.ui.MainViewModel
 import com.nexflash.app.ui.NexFlashRoot
 import com.nexflash.app.ui.theme.NexFlashTheme
