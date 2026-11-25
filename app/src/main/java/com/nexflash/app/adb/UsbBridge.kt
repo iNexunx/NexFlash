@@ -52,6 +52,7 @@ class UsbBridge(private val ctx: Context) {
                     0 -> {
                         val names = usb.deviceList.keys.joinToString(":")
                         if (names.isNotEmpty()) out.writeUTF(names)
+                        Unit
                     }
                     1 -> {
                         val name = ins.readUTF()
