@@ -8,9 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -20,12 +17,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install NDK & CMake
-        run: |
-          set -euo pipefail
-          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager | sort | tail -n 1)"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install "ndk;27.2.12479018" "cmake;3.22.1"
+        run: sdkmanager --install "ndk;27.2.12479018" "cmake;3.22.1"
 
       - name: Build libusb_bridge (all ABIs)
         run: |
@@ -41,10 +37,10 @@ jobs:
               -DCMAKE_BUILD_TYPE=MinSizeRel
             cmake --build "$BUILD" -j"$(nproc)"
             cp "$BUILD/libusb_bridge.so" "app/src/main/jniLibs/$ABI/libusb_bridge.so"
-            "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "app/src/main/jniLibs/$ABI/libusb_bridge.so"
+            llvm-strip --strip-unneeded "app/src/main/jniLibs/$ABI/libusb_bridge.so" || "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "app/src/main/jniLibs/$ABI/libusb_bridge.so"
             echo "=== $ABI ==="
             ls -lh "app/src/main/jniLibs/$ABI/libusb_bridge.so"
-            "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -Ws "app/src/main/jniLibs/$ABI/libusb_bridge.so" | grep '_ZN10usb_bridge' || true
+            "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -Ws "app/src/main/jniLibs/$ABI/libusb_bridge.so" | grep get_devices || true
           done
 
       - name: Setup Gradle
@@ -53,7 +49,8 @@ jobs:
           gradle-version: '8.7'
 
       - name: Decode keystore
-        run: echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/nexun.jks"
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/nexun.jks"
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
 
