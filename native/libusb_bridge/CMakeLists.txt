@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.22)
-project(usb_bridge CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_library(usb_bridge SHARED usb_bridge.cpp)
-target_compile_options(usb_bridge PRIVATE -Os -fvisibility=hidden -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti)
-target_link_options(usb_bridge PRIVATE -Wl,--gc-sections -Wl,--exclude-libs,ALL -s)
