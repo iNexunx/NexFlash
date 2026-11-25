@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nexflash.app.ui.MainViewModel
 import com.nexflash.app.ui.NexFlashRoot
+import com.nexflash.app.ui.theme.Accent
 import com.nexflash.app.ui.theme.NexFlashTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +22,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val ui by vm.state.collectAsStateWithLifecycle()
-            NexFlashTheme(accent = ui.accent) {
+            NexFlashTheme(accent = Accent.entries[ui.accent.coerceIn(0, Accent.entries.lastIndex)]) {
                 Surface { NexFlashRoot(vm) }
             }
         }
