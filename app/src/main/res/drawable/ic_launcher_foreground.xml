@@ -3,13 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:translateX="0" android:translateY="0">
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M59.5,24L33,58H50L45.5,84L75,50H58L59.5,24Z"/>
-        <path
-            android:fillColor="#EADDFF"
-            android:fillAlpha="0.55"
-            android:pathData="M59.5,24L56.8,32.5L48.2,50H58L75,50L61.8,63.2L50,58H33L59.5,24Z"/>
-    </group>
+    <!-- Centered geometric bolt; safe-zone friendly, no glow/texture -->
+    <path
+        android:fillColor="@color/seed_on"
+        android:pathData="M60,24L34,58H51L46,84L74,50H57z"/>
+    <path
+        android:fillColor="#EADDFF"
+        android:fillAlpha="0.16"
+        android:pathData="M60,24L57,34L51,58H57L74,50L63,60L51,58H34z"/>
 </vector>

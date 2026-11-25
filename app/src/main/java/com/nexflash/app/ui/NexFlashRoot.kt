@@ -33,6 +33,7 @@ fun NexFlashRoot(vm: MainViewModel = viewModel()) {
     val tabs = listOf("ADB", "Fastboot", "Consola")
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text("NexFlash") },
@@ -43,7 +44,7 @@ fun NexFlashRoot(vm: MainViewModel = viewModel()) {
             )
         }
     ) { pad ->
-        Column(Modifier.padding(pad).fillMaxSize()) {
+        Column(Modifier.padding(pad).fillMaxSize().imePadding()) {
             if (s.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             PrimaryTabRow(selectedTabIndex = tab) {
                 tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
@@ -112,7 +113,7 @@ fun Pill(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, en
 @Composable
 fun AdbTab(s: UiState, vm: MainViewModel) {
     val zipPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let(vm::sideload) }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { HeroCard("ADB", "Conecta por OTG, autoriza depuración USB y controla el dispositivo.", Icons.Default.Usb) }
         item { DevicePicker(s.adbDevices, s.selectedAdb, vm::selectAdb, "Dispositivo ADB") }
         item { SectionTitle("Acciones rápidas") }
@@ -141,7 +142,7 @@ fun FastbootTab(s: UiState, vm: MainViewModel) {
     val imgPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let { vm.flash(partition, it) } }
     val vbmetaPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let(vm::flashVbmetaDisable) }
     val partitions = listOf("boot","init_boot","recovery","vendor_boot","dtbo","vbmeta","system","vendor","product","super","userdata")
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { HeroCard("Fastboot", "Flashea particiones, consulta variables y gestiona el bootloader.", Icons.Default.FlashOn) }
         item { DevicePicker(s.fbDevices, s.selectedFb, vm::selectFb, "Dispositivo Fastboot") }
         item { SectionTitle("Acciones rápidas") }
@@ -177,7 +178,7 @@ fun FastbootTab(s: UiState, vm: MainViewModel) {
 @Composable
 fun ConsoleTab(s: UiState, vm: MainViewModel) {
     var cmd by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().padding(16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(value = cmd, onValueChange = { cmd = it }, label = { Text("Comando (adb/fastboot/...)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Ejecutar", Icons.Default.PlayArrow, !s.busy && cmd.isNotBlank()) { vm.runRaw(cmd) }

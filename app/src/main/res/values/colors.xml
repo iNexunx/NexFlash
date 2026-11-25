@@ -1,3 +1,6 @@
 <resources>
     <color name="seed">#6750A4</color>
+    <color name="seed_light">#7A67B2</color>
+    <color name="seed_on">#FFFFFF</color>
+    <color name="seed_surface">#F6F1FB</color>
 </resources>

@@ -6,8 +6,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nexflash.app.ui.MainViewModel
@@ -22,8 +24,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val ui by vm.state.collectAsStateWithLifecycle()
-            NexFlashTheme(accent = Accent.entries[ui.accent.coerceIn(0, Accent.entries.lastIndex)]) {
-                Surface { NexFlashRoot(vm) }
+            val dark = androidx.compose.foundation.isSystemInDarkTheme()
+            androidx.compose.runtime.SideEffect {
+                val c = WindowCompat.getInsetsController(window, window.decorView)
+                c.isAppearanceLightStatusBars = !dark
+                c.isAppearanceLightNavigationBars = !dark
+            }
+            NexFlashTheme(accent = Accent.entries[ui.accent.coerceIn(0, Accent.entries.lastIndex)], dark = dark) {
+                Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) { NexFlashRoot(vm) }
             }
         }
     }
