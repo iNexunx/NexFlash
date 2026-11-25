@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">NexFlash</string>
+    <string name="tab_adb">ADB</string>
+    <string name="tab_fastboot">Fastboot</string>
+    <string name="tab_console">Consola</string>
+    <string name="refresh">Refrescar</string>
+    <string name="no_devices">Sin dispositivos</string>
+    <string name="select_file">Seleccionar archivo</string>
+    <string name="run">Ejecutar</string>
+    <string name="clear">Limpiar</string>
+</resources>

@@ -1,0 +1,2 @@
+-keep class com.nexflash.app.** { *; }
+-dontwarn java.lang.invoke.StringConcatFactory
