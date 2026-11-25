@@ -12,6 +12,7 @@ import android.net.LocalSocket
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import kotlinx.coroutines.*
+import kotlinx.coroutines.runBlocking
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.FileDescriptor
@@ -55,7 +56,8 @@ class UsbBridge(private val ctx: Context) {
                     1 -> {
                         val name = ins.readUTF()
                         val dev = usb.deviceList[name] ?: return
-                        if (!ensurePermission(dev)) return
+                        val ok = runBlocking { ensurePermission(dev) }
+                        if (!ok) return
                         val conn = usb.openDevice(dev) ?: return
                         val fd = conn.fileDescriptor
                         if (fd < 0) { conn.close(); return }
@@ -71,6 +73,7 @@ class UsbBridge(private val ctx: Context) {
                         val dev = usb.deviceList[name] ?: return
                         dev.serialNumber?.let { out.writeUTF(it) }
                     }
+                    else -> Unit
                 }
             } catch (_: Throwable) {}
         }
