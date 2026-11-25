@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.nexflash.app.ui
 
 import android.net.Uri
@@ -22,7 +24,7 @@ import com.nexflash.app.adb.Device
 import com.nexflash.app.ui.theme.Accent
 import com.nexflash.app.ui.theme.NexFlashTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NexFlashRoot(vm: MainViewModel = viewModel()) {
     val s by vm.state.collectAsState()
