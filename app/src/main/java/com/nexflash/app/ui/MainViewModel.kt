@@ -12,6 +12,7 @@ import com.nexflash.app.util.Shell
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -63,17 +64,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (fbScan.err.isNotBlank()) log("[fastboot err] ${fbScan.err}")
     }
 
+    fun resetUsb() = viewModelScope.launch {
+        _state.update { it.copy(busy = true) }
+        log("[usb] reiniciando bridge/conexiones...")
+        runCatching { bridge.restart() }.onFailure { log("[usb err] ${it.message}") }
+        runCatching { Shell.run(ctx, Shell.adb(ctx, listOf("kill-server"), null)) }
+        delay(600)
+        _state.update { it.copy(busy = false) }
+        refresh()
+    }
+
     fun selectAdb(s: String) = _state.update { it.copy(selectedAdb = s) }
     fun selectFb(s: String) = _state.update { it.copy(selectedFb = s) }
 
     fun runAdb(args: List<String>) = exec(Shell.adb(ctx, args, state.value.selectedAdb))
     fun runFastboot(args: List<String>) = exec(Shell.fastboot(ctx, args, state.value.selectedFb))
     fun runRaw(cmd: String) = viewModelScope.launch {
-        val parts = cmd.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
-        if (parts.isEmpty()) return@launch
-        val bin = File(Bootstrap.bin(ctx), parts[0])
-        val full = if (bin.exists()) listOf(bin.absolutePath) + parts.drop(1) else parts
-        exec(full)
+        _state.update { it.copy(busy = true) }
+        log("$ $cmd")
+        val env = Bootstrap.env(ctx)
+        val r = runCatching { Shell.run(ctx, listOf(Bootstrap.bin(ctx, "bash").absolutePath, "-lc", cmd), 180) }.getOrElse { com.nexflash.app.util.CmdResult(1, "", it.message ?: "error") }
+        if (r.out.isNotBlank()) log(r.out)
+        if (r.err.isNotBlank()) log("ERR: ${r.err}")
+        log("[exit ${r.code}]")
+        _state.update { it.copy(busy = false) }
+        refresh()
     }
 
     private fun exec(cmd: List<String>) = viewModelScope.launch {
@@ -96,6 +111,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val ext = (uri.lastPathSegment ?: "img").substringAfterLast('.', "img")
         val f = copyUri(uri, "flash.$ext") ?: return@launch
         exec(Shell.fastboot(ctx, listOf("flash", partition, f.absolutePath), state.value.selectedFb))
+    }
+
+    fun flashVbmetaDisable(uri: Uri) = viewModelScope.launch {
+        val f = copyUri(uri, "vbmeta.img") ?: return@launch
+        val p = f.absolutePath
+        val serial = state.value.selectedFb
+        val base = Shell.fastboot(ctx, emptyList(), serial).dropLast(0) // prefix
+        val fb = Shell.fastboot(ctx, emptyList(), serial)
+        // build commands with disable flags
+        val cmd = fb + listOf("--disable-verity","--disable-verification","flash","vbmeta",p)
+        exec(cmd)
     }
 
     private suspend fun copyUri(uri: Uri, name: String): File? = runCatching {

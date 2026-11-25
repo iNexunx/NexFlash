@@ -23,8 +23,14 @@ fun NexFlashTheme(accent: Accent = Accent.Dynamic, dark: Boolean = isSystemInDar
     val scheme = when {
         accent == Accent.Dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-        dark -> darkColorScheme(primary = accent.seed, secondary = accent.seed, tertiary = accent.seed)
-        else -> lightColorScheme(primary = accent.seed, secondary = accent.seed, tertiary = accent.seed)
+        dark -> darkColorScheme(primary = accent.seed, secondary = accent.seed.copy(alpha = .85f), tertiary = accent.seed)
+        else -> lightColorScheme(primary = accent.seed, secondary = accent.seed.copy(alpha = .85f), tertiary = accent.seed, surfaceContainerHigh = accent.seed.copy(alpha = .08f))
     }
-    MaterialTheme(colorScheme = scheme, typography = Typography(), content = content)
+    MaterialTheme(colorScheme = scheme, typography = Typography(), shapes = Shapes(
+        extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12),
+        small = androidx.compose.foundation.shape.RoundedCornerShape(16),
+        medium = androidx.compose.foundation.shape.RoundedCornerShape(24),
+        large = androidx.compose.foundation.shape.RoundedCornerShape(28),
+        extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32),
+    ), content = content)
 }

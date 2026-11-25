@@ -5,6 +5,7 @@ package com.nexflash.app.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -84,8 +85,26 @@ fun DevicePicker(devices: List<Device>, selected: String?, onSelect: (String) ->
 }
 
 @Composable
+fun SectionTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+}
+
+@Composable
+fun HeroCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    ElevatedCard(shape = RoundedCornerShape(28.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
+        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            FilledTonalIconButton(onClick = {}, enabled = false) { Icon(icon, null) }
+            Column {
+                Text(title, style = MaterialTheme.typography.headlineSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
 fun Pill(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean = true, onClick: () -> Unit) {
-    FilledTonalButton(onClick = onClick, enabled = enabled, shape = RoundedCornerShape(999.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
+    FilledTonalButton(onClick = onClick, enabled = enabled, shape = RoundedCornerShape(999.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
         Icon(icon, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(text)
     }
 }
@@ -94,18 +113,20 @@ fun Pill(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, en
 fun AdbTab(s: UiState, vm: MainViewModel) {
     val zipPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let(vm::sideload) }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { HeroCard("ADB", "Conecta por OTG, autoriza depuración USB y controla el dispositivo.", Icons.Default.Usb) }
         item { DevicePicker(s.adbDevices, s.selectedAdb, vm::selectAdb, "Dispositivo ADB") }
-        item { Text("Acciones rápidas", style = MaterialTheme.typography.titleMedium) }
+        item { SectionTitle("Acciones rápidas") }
         item { FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Devices", Icons.Default.Usb, !s.busy) { vm.runAdb(listOf("devices","-l")) }
+            Pill("Reconectar USB", Icons.Default.Cable, !s.busy) { vm.resetUsb() }
             Pill("Shell", Icons.Default.Terminal, !s.busy) { vm.runAdb(listOf("shell","getprop","ro.product.model")) }
             Pill("Reboot", Icons.Default.RestartAlt, !s.busy) { vm.runAdb(listOf("reboot")) }
             Pill("Recovery", Icons.Default.Healing, !s.busy) { vm.runAdb(listOf("reboot","recovery")) }
             Pill("Bootloader", Icons.Default.Build, !s.busy) { vm.runAdb(listOf("reboot","bootloader")) }
             Pill("Sideload mode", Icons.Default.SystemUpdate, !s.busy) { vm.runAdb(listOf("reboot","sideload")) }
         } }
-        item { ElevatedCard(shape = RoundedCornerShape(24.dp)) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Sideload ZIP / ROM / GApps", style = MaterialTheme.typography.titleMedium)
+        item { ElevatedCard(shape = RoundedCornerShape(28.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionTitle("Sideload ZIP / ROM / GApps")
             Text("Selecciona un .zip y NexFlash ejecuta adb sideload.", style = MaterialTheme.typography.bodySmall)
             Pill("Elegir ZIP y Sideload", Icons.Default.FolderZip, !s.busy) { zipPicker.launch(arrayOf("application/zip","*/*")) }
         } } }
@@ -118,18 +139,22 @@ fun AdbTab(s: UiState, vm: MainViewModel) {
 fun FastbootTab(s: UiState, vm: MainViewModel) {
     var partition by remember { mutableStateOf("boot") }
     val imgPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let { vm.flash(partition, it) } }
+    val vbmetaPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let(vm::flashVbmetaDisable) }
     val partitions = listOf("boot","init_boot","recovery","vendor_boot","dtbo","vbmeta","system","vendor","product","super","userdata")
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { HeroCard("Fastboot", "Flashea particiones, consulta variables y gestiona el bootloader.", Icons.Default.FlashOn) }
         item { DevicePicker(s.fbDevices, s.selectedFb, vm::selectFb, "Dispositivo Fastboot") }
+        item { SectionTitle("Acciones rápidas") }
         item { FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Devices", Icons.Default.Usb, !s.busy) { vm.runFastboot(listOf("devices","-l")) }
+            Pill("Reconectar USB", Icons.Default.Cable, !s.busy) { vm.resetUsb() }
             Pill("Getvar all", Icons.Default.Info, !s.busy) { vm.runFastboot(listOf("getvar","all")) }
             Pill("Reboot", Icons.Default.RestartAlt, !s.busy) { vm.runFastboot(listOf("reboot")) }
             Pill("Reboot bootloader", Icons.Default.Build, !s.busy) { vm.runFastboot(listOf("reboot-bootloader")) }
             Pill("Reboot recovery", Icons.Default.Healing, !s.busy) { vm.runFastboot(listOf("reboot","recovery")) }
         } }
-        item { ElevatedCard(shape = RoundedCornerShape(24.dp)) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Flash partición", style = MaterialTheme.typography.titleMedium)
+        item { ElevatedCard(shape = RoundedCornerShape(28.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionTitle("Flash partición")
             var exp by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = it }) {
                 OutlinedTextField(value = partition, onValueChange = { partition = it }, label = { Text("Partición") },
@@ -139,7 +164,10 @@ fun FastbootTab(s: UiState, vm: MainViewModel) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Pill("Elegir IMG y Flash", Icons.Default.FlashOn, !s.busy && partition.isNotBlank()) { imgPicker.launch(arrayOf("application/octet-stream","*/*")) }
                 Pill("Erase", Icons.Default.DeleteForever, !s.busy && partition.isNotBlank()) { vm.runFastboot(listOf("erase", partition)) }
+                Pill("Desactivar vbmeta", Icons.Default.GppBad, !s.busy) { vbmetaPicker.launch(arrayOf("application/octet-stream","*/*")) }
+                Pill("vbmeta A/B (personalizado)", Icons.Default.Security, !s.busy) { vm.runRaw("fastboot --disable-verity --disable-verification flash vbmeta_a /sdcard/vbmeta.img && fastboot --disable-verity --disable-verification flash vbmeta_b /sdcard/vbmeta.img") }
             }
+            Text("Para desactivar verificación, selecciona vbmeta.img con el picker o coloca vbmeta.img en cache y usa comando personalizado.", style = MaterialTheme.typography.bodySmall)
         } } }
         item { CmdCard("Comando Fastboot personalizado", "getvar all", !s.busy) { vm.runRaw("fastboot $it") } }
         item { LogCard(s.log, vm::clearLog) }
@@ -162,8 +190,8 @@ fun ConsoleTab(s: UiState, vm: MainViewModel) {
 @Composable
 fun CmdCard(title: String, hint: String, enabled: Boolean, onRun: (String) -> Unit) {
     var v by remember { mutableStateOf("") }
-    ElevatedCard(shape = RoundedCornerShape(24.dp)) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+    ElevatedCard(shape = RoundedCornerShape(28.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionTitle(title)
         OutlinedTextField(value = v, onValueChange = { v = it }, label = { Text(hint) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp))
         Pill("Ejecutar", Icons.Default.PlayArrow, enabled && v.isNotBlank()) { onRun(v) }
     } }
@@ -171,14 +199,17 @@ fun CmdCard(title: String, hint: String, enabled: Boolean, onRun: (String) -> Un
 
 @Composable
 fun LogCard(log: String, onClear: () -> Unit, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
-        Column(Modifier.padding(12.dp)) {
+    ElevatedCard(modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(14.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Log", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onClear) { Text("Limpiar") }
+                SectionTitle("Log")
+                FilledTonalButton(onClick = onClear, shape = RoundedCornerShape(999.dp)) { Text("Limpiar") }
             }
-            Box(Modifier.heightIn(min = 120.dp, max = 320.dp).verticalScroll(rememberScrollState())) {
-                Text(log.ifBlank { "Sin salida." }, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(8.dp))
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                Box(Modifier.fillMaxWidth().heightIn(min = 140.dp, max = 340.dp).padding(12.dp).verticalScroll(rememberScrollState())) {
+                    Text(log.ifBlank { "Sin salida." }, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }

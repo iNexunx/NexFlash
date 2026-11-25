@@ -21,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap
 class UsbBridge(private val ctx: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val usb = ctx.getSystemService(Context.USB_SERVICE) as UsbManager
-    private val connections = ConcurrentHashMap<Int, android.hardware.usb.UsbDeviceConnection>()
+    private val connections = ConcurrentHashMap<String, android.hardware.usb.UsbDeviceConnection>()
     @Volatile private var server: LocalServerSocket? = null
+    @Volatile private var generation: Int = 0
 
     fun start() {
         if (server != null) return
@@ -37,10 +38,25 @@ class UsbBridge(private val ctx: Context) {
         }
     }
 
+    fun restart() {
+        generation++
+        closeAll()
+        try { server?.close() } catch (_: Throwable) {}
+        server = null
+        start()
+    }
+
     fun stop() {
         try { server?.close() } catch (_: Throwable) {}
         server = null
+        closeAll()
         scope.cancel()
+    }
+
+    fun closeAll() {
+        connections.keys.toList().forEach { k ->
+            runCatching { connections.remove(k)?.close() }
+        }
     }
 
     private fun handle(sock: LocalSocket) {
@@ -59,15 +75,18 @@ class UsbBridge(private val ctx: Context) {
                         val dev = usb.deviceList[name] ?: return
                         val ok = runBlocking { ensurePermission(dev) }
                         if (!ok) return
+                        // close stale connection for same device before reopening
+                        connections.remove(name)?.let { runCatching { it.close() } }
                         val conn = usb.openDevice(dev) ?: return
                         val fd = conn.fileDescriptor
                         if (fd < 0) { conn.close(); return }
-                        connections[fd] = conn
-                        val pfd = ParcelFileDescriptor.adoptFd(fd)
+                        connections[name] = conn
+                        val pfd = dupFd(fd)
                         pfd.use {
                             s.setFileDescriptorsForSend(arrayOf(it.fileDescriptor))
                             s.outputStream.write(0)
                         }
+                        // keep conn alive until restart/closeAll; adb/libusb owns the dup'd fd
                     }
                     2 -> {
                         val name = ins.readUTF()
@@ -99,6 +118,16 @@ class UsbBridge(private val ctx: Context) {
         return withTimeoutOrNull(30_000) { granted.await() } ?: false
     }
 
+
+    private fun dupFd(fd: Int): ParcelFileDescriptor {
+        val tmp = java.io.FileDescriptor()
+        val f = java.io.FileDescriptor::class.java.getDeclaredField("descriptor")
+        f.isAccessible = true
+        f.setInt(tmp, fd)
+        val dup = android.system.Os.dup(tmp)
+        val out = f.getInt(dup)
+        return ParcelFileDescriptor.adoptFd(out)
+    }
     companion object {
         const val SOCKET = "adbify_usb_bridge"
         const val ACTION_USB_PERMISSION = "com.nexflash.app.USB_PERMISSION"
